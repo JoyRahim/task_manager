@@ -1,8 +1,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:task_manager/data/services/api_caller.dart';
+import 'package:task_manager/data/utils/urls.dart';
 import 'package:task_manager/ui/screens/forgot_password_verify_otp_screen.dart';
 import 'package:task_manager/ui/screens/sign_up_screen.dart';
 import 'package:task_manager/ui/widgets/screen_background.dart';
+import 'package:task_manager/ui/widgets/snack_bar_message.dart';
 
 class ForgotPasswordVerifyEmailScreen extends StatefulWidget {
   const ForgotPasswordVerifyEmailScreen({super.key});
@@ -16,6 +19,7 @@ class _ForgotPasswordVerifyEmailScreenState
     extends State<ForgotPasswordVerifyEmailScreen> {
   final TextEditingController _emailTEController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _recoverVerifyInProgress = false;
 
   @override
   Widget build(BuildContext context) {
@@ -80,15 +84,30 @@ class _ForgotPasswordVerifyEmailScreenState
     );
   }
 
+  Future<void> _recoverVerifyEmail() async {
+    _recoverVerifyInProgress = true;
+    setState(() {});
+    final ApiResponse response = await ApiCaller.getRequest(
+      url: Urls.recoverVerifyEmailUrl(_emailTEController.text),
+    );
+    _recoverVerifyInProgress = false;
+    setState(() {});
+    if (response.isSuccess) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ForgotPasswordVerifyOtpScreen(email:_emailTEController.text)),
+      );
+    } else {
+      showSnackBarMessage(context, response.errorMessage!);
+    }
+  }
+
   void _onTapLoginButton() {
     Navigator.pop(context);
   }
 
   void _onTapNextButton() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ForgotPasswordVerifyOtpScreen()),
-    );
+    _recoverVerifyEmail();
   }
 
   @override

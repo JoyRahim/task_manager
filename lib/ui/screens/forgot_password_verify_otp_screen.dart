@@ -1,13 +1,17 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:task_manager/data/services/api_caller.dart';
+import 'package:task_manager/data/utils/urls.dart';
 import 'package:task_manager/ui/screens/login_screen.dart';
 import 'package:task_manager/ui/screens/reset_password_screen.dart';
 import 'package:task_manager/ui/screens/sign_up_screen.dart';
 import 'package:task_manager/ui/widgets/screen_background.dart';
+import 'package:task_manager/ui/widgets/snack_bar_message.dart';
 
 class ForgotPasswordVerifyOtpScreen extends StatefulWidget {
-  const ForgotPasswordVerifyOtpScreen({super.key});
+  const ForgotPasswordVerifyOtpScreen({super.key, required this.email});
+  final String email;
 
   @override
   State<ForgotPasswordVerifyOtpScreen> createState() =>
@@ -18,6 +22,7 @@ class _ForgotPasswordVerifyOtpScreenState
     extends State<ForgotPasswordVerifyOtpScreen> {
   final TextEditingController _otpTEController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _recoverVerifyOtpInProgress = false;
 
   @override
   Widget build(BuildContext context) {
@@ -103,12 +108,29 @@ class _ForgotPasswordVerifyOtpScreenState
     );
   }
 
-  void _onTapVerifyButton() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => ResetPasswordScreen()),
-      (predicate) => false,
+
+  Future<void> _recoverVerifyOtp() async {
+    _recoverVerifyOtpInProgress = true;
+    setState(() {});
+    final ApiResponse response = await ApiCaller.getRequest(
+      url: Urls.recoverVerifyOtpUrl(widget.email,_otpTEController.text),
     );
+    _recoverVerifyOtpInProgress = false;
+    setState(() {});
+    if (response.isSuccess) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => ResetPasswordScreen(email: widget.email, otp: _otpTEController.text,)),
+            (predicate) => false,
+      );
+      await Future.delayed(Duration(seconds: 1));
+    } else {
+      showSnackBarMessage(context, response.errorMessage!);
+    }
+  }
+
+  void _onTapVerifyButton() {
+    _recoverVerifyOtp();
   }
 
   @override

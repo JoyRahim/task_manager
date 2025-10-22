@@ -1,10 +1,15 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:task_manager/data/services/api_caller.dart';
+import 'package:task_manager/data/utils/urls.dart';
 import 'package:task_manager/ui/screens/login_screen.dart';
 import 'package:task_manager/ui/widgets/screen_background.dart';
+import 'package:task_manager/ui/widgets/snack_bar_message.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({super.key});
+  const ResetPasswordScreen({super.key, required this.email, required this.otp});
+  final String email;
+  final String otp;
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -15,6 +20,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final TextEditingController _confirmPasswordTEController =
       TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _recoverResetPasswordInProgress = false;
 
   @override
   Widget build(BuildContext context) {
@@ -94,12 +100,34 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
-  void _onTapResetPasswordButton() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-      (predicate) => false,
+  Future<void> _recoverResetPassword() async {
+    _recoverResetPasswordInProgress = true;
+    setState(() {});
+    Map<String, dynamic> requestBody = {
+      "email": widget.email.trim(),
+      "OTP": widget.otp.trim(),
+      "password": _passwordTEController.text,
+    };
+    final ApiResponse response = await ApiCaller.postRequest(
+      url: Urls.recoverResetPasswordUrl,
+      body: requestBody,
     );
+    _recoverResetPasswordInProgress = false;
+    setState(() {});
+
+    if (response.isSuccess) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+            (predicate) => false,
+      );
+    } else {
+      showSnackBarMessage(context, response.errorMessage!);
+    }
+  }
+
+  void _onTapResetPasswordButton() {
+    _recoverResetPassword();
   }
 
   @override
