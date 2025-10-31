@@ -35,16 +35,43 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   XFile? _selectedImage;
   
   bool _updateProfileInProgress = false;
+  bool _getProfileDetailsInProgress = false;
 
   @override
   void initState() {
     super.initState();
+    _getUserProfileDetails();
     UserModel user = AuthController.userModel!;
 
     _emailTEController.text = user.email;
     _firstNameTEController.text = user.firstName;
     _lastNameTEController.text = user.lastName;
     _mobileTEController.text = user.mobile;
+  }
+  Future<void> _getUserProfileDetails() async {
+    _getProfileDetailsInProgress = true;
+    setState(() {});
+    final ApiResponse response = await ApiCaller.getRequest(
+      url: Urls.profileDetailsUrl,
+    );
+    if (response.isSuccess && response.responseData['status'] == 'success') {
+      for (Map<String, dynamic> jsonData in response.responseData['data']) {
+        UserModel userModel = UserModel.fromJson(jsonData);
+        _emailTEController.text = userModel.email;
+        _firstNameTEController.text = userModel.firstName;
+        _lastNameTEController.text = userModel.lastName;
+        _mobileTEController.text = userModel.mobile;
+      }
+      //UserModel userModel = UserModel.fromJson(response.responseData['data']);
+      // _emailTEController.text = userModel.email;
+      // _firstNameTEController.text = userModel.firstName;
+      // _lastNameTEController.text = userModel.lastName;
+      // _mobileTEController.text = userModel.mobile;
+    } else {
+      showSnackBarMessage(context, response.errorMessage!);
+    }
+    _getProfileDetailsInProgress = false;
+    setState(() {});
   }
 
   @override
@@ -96,7 +123,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                     decoration: InputDecoration(hintText: 'Last name'),
                     validator: (String? value) {
                       if (value?.trim().isEmpty ?? true) {
-                        return 'Enter your first name';
+                        return 'Enter your last name';
                       }
                       return null;
                     },
@@ -107,7 +134,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                     decoration: InputDecoration(hintText: 'Mobile'),
                     validator: (String? value) {
                       if (value?.trim().isEmpty ?? true) {
-                        return 'Enter your first name';
+                        return 'Enter your mobile number';
                       }
                       return null;
                     },
