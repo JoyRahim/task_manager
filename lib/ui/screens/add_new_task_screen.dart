@@ -19,6 +19,7 @@ class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
   final TextEditingController _titleTEController = TextEditingController();
   final TextEditingController _descriptionTEController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final NewTaskListProvider _newTaskListProvider = NewTaskListProvider();
 
   bool _addNewTaskInProgress = false;
 
@@ -26,55 +27,62 @@ class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TMAppBar(),
-      body: ScreenBackground(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 32),
-                  Text(
-                    'Add new task',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _titleTEController,
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(hintText: 'Title'),
-                    validator: (String? value) {
-                      if (value?.trim().isEmpty ?? true) {
-                        return 'Enter your title';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _descriptionTEController,
-                    maxLines: 6,
-                    decoration: InputDecoration(hintText: 'Description'),
-                    validator: (String? value) {
-                      if (value?.trim().isEmpty ?? true) {
-                        return 'Enter your description';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Visibility(
-                    visible: _addNewTaskInProgress == false,
-                    replacement: CenteredProgressIndicator(),
-                    child: FilledButton(
-                      onPressed: _onTapAddButton,
-                      child: Text('Add'),
+      body: ChangeNotifierProvider(
+        create: (_) => _newTaskListProvider,
+        child: ScreenBackground(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 32),
+                    Text(
+                      'Add new task',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _titleTEController,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(hintText: 'Title'),
+                      validator: (String? value) {
+                        if (value?.trim().isEmpty ?? true) {
+                          return 'Enter your title';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _descriptionTEController,
+                      maxLines: 6,
+                      decoration: InputDecoration(hintText: 'Description'),
+                      validator: (String? value) {
+                        if (value?.trim().isEmpty ?? true) {
+                          return 'Enter your description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Consumer<NewTaskListProvider>(
+                        builder: (context, newTaskListProvider, _) {
+                        return Visibility(
+                          visible: newTaskListProvider.addNewTaskInProgress == false,
+                          replacement: CenteredProgressIndicator(),
+                          child: FilledButton(
+                            onPressed: _onTapAddButton,
+                            child: Text('Add'),
+                          ),
+                        );
+                      }
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -90,29 +98,15 @@ class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
   }
 
   Future<void> _addNewTask() async {
-    _addNewTaskInProgress = true;
-    setState(() {});
-
-    Map<String, dynamic> requestBody = {
-      "title": _titleTEController.text.trim(),
-      "description": _descriptionTEController.text.trim(),
-      "status": "New",
-    };
-
-    final ApiResponse response = await ApiCaller.postRequest(
-      url: Urls.createTaskUrl,
-      body: requestBody,
+    final bool isSuccess = await _newTaskListProvider.addNewTask(
+      _titleTEController.text.trim(),
+      _descriptionTEController.text.trim(),
     );
-
-    _addNewTaskInProgress = false;
-    setState(() {});
-
-    if (response.isSuccess) {
-      context.read<NewTaskListProvider>().getNewTasks();
+    if (isSuccess) {
       _clearTextFields();
-      showSnackBarMessage(context, 'New task has been added');
+      showSnackBarMessage(context, 'New task has been added.');
     } else {
-      showSnackBarMessage(context, response.errorMessage!);
+      showSnackBarMessage(context, _newTaskListProvider.errorMessage!);
     }
   }
 

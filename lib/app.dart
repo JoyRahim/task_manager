@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:task_manager/ui/controllers/auth_provider.dart';
 //import 'package:task_manager/ui/controllers/login_provider.dart';
 import 'package:task_manager/ui/controllers/new_task_list_provider.dart';
 import 'package:task_manager/ui/screens/login_screen.dart';
@@ -18,6 +19,7 @@ class TaskManagerApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NewTaskListProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

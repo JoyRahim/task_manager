@@ -19,14 +19,17 @@ class NewTaskScreen extends StatefulWidget {
 }
 
 class _NewTaskScreenState extends State<NewTaskScreen> {
+  //final NewTaskListProvider _newTaskListProvider = NewTaskListProvider();
   bool _getTaskStatusCountInProgress = false;
   List<TaskStatusCountModel> _taskStatusCountList = [];
 
   @override
   void initState() {
     super.initState();
-    _getAllTaskStatusCount();
-    context.read<NewTaskListProvider>().getNewTasks();
+    Future.microtask(() {
+      Provider.of<NewTaskListProvider>(context, listen: false).getAllTaskStatusCount();
+      Provider.of<NewTaskListProvider>(context, listen: false).getNewTasks();
+    });
   }
 
   Future<void> _getAllTaskStatusCount() async {
@@ -58,22 +61,26 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
             const SizedBox(height: 16),
             SizedBox(
               height: 90,
-              child: Visibility(
-                visible: _getTaskStatusCountInProgress == false,
-                replacement: CenteredProgressIndicator(),
-                child: ListView.separated(
-                  itemCount: _taskStatusCountList.length,
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    return TaskCountByStatusCard(
-                      title: _taskStatusCountList[index].status,
-                      count: _taskStatusCountList[index].count,
-                    );
-                  },
-                  separatorBuilder: (context, index) {
-                    return SizedBox(width: 4);
-                  },
-                ),
+              child: Consumer<NewTaskListProvider>(
+                  builder: (context, newTaskListProvider, _) {
+                  return Visibility(
+                    visible: newTaskListProvider.getTaskStatusCountInProgress == false,
+                    replacement: CenteredProgressIndicator(),
+                    child: ListView.separated(
+                      itemCount: newTaskListProvider.taskStatusCountList.length,
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, index) {
+                        return TaskCountByStatusCard(
+                          title: newTaskListProvider.taskStatusCountList[index].status,
+                          count: newTaskListProvider.taskStatusCountList[index].count,
+                        );
+                      },
+                      separatorBuilder: (context, index) {
+                        return SizedBox(width: 4);
+                      },
+                    ),
+                  );
+                }
               ),
             ),
             Expanded(
