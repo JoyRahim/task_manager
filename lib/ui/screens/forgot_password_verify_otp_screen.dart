@@ -1,11 +1,14 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:provider/provider.dart';
 import 'package:task_manager/data/services/api_caller.dart';
 import 'package:task_manager/data/utils/urls.dart';
+import 'package:task_manager/ui/controllers/verify_email_otp_provider.dart';
 import 'package:task_manager/ui/screens/login_screen.dart';
 import 'package:task_manager/ui/screens/reset_password_screen.dart';
 import 'package:task_manager/ui/screens/sign_up_screen.dart';
+import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
 import 'package:task_manager/ui/widgets/screen_background.dart';
 import 'package:task_manager/ui/widgets/snack_bar_message.dart';
 
@@ -14,84 +17,86 @@ class ForgotPasswordVerifyOtpScreen extends StatefulWidget {
   final String email;
 
   @override
-  State<ForgotPasswordVerifyOtpScreen> createState() =>
-      _ForgotPasswordVerifyOtpScreenState();
+  State<ForgotPasswordVerifyOtpScreen> createState() => _ForgotPasswordVerifyOtpScreenState();
 }
 
-class _ForgotPasswordVerifyOtpScreenState
-    extends State<ForgotPasswordVerifyOtpScreen> {
+class _ForgotPasswordVerifyOtpScreenState extends State<ForgotPasswordVerifyOtpScreen> {
   final TextEditingController _otpTEController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final VerifyEmailOtpProvider _verifyEmailOtpProvider = VerifyEmailOtpProvider();
   bool _recoverVerifyOtpInProgress = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ScreenBackground(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 82),
-                  Text(
-                    'Enter Your OTP',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'A 6 digits OTP has been sent to your email address',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  PinCodeTextField(
-                    length: 6,
-                    obscureText: false,
-                    animationType: AnimationType.fade,
-                    keyboardType: TextInputType.number,
-                    pinTheme: PinTheme(
-                      shape: PinCodeFieldShape.box,
-                      borderRadius: BorderRadius.circular(5),
-                      fieldHeight: 50,
-                      fieldWidth: 40,
-                      activeFillColor: Colors.white,
+      body: ChangeNotifierProvider(
+        create: (_) => _verifyEmailOtpProvider,
+        child: ScreenBackground(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 82),
+                    Text('Enter Your OTP', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 4),
+                    Text(
+                      'A 6 digits OTP has been sent to your email address',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
                     ),
-                    animationDuration: Duration(milliseconds: 300),
-                    backgroundColor: Colors.transparent,
-                    controller: _otpTEController,
-                    appContext: context,
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _onTapVerifyButton,
-                    child: Text('Verify'),
-                  ),
-                  const SizedBox(height: 36),
-                  Center(
-                    child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 24),
+                    PinCodeTextField(
+                      length: 6,
+                      obscureText: false,
+                      animationType: AnimationType.fade,
+                      keyboardType: TextInputType.number,
+                      pinTheme: PinTheme(
+                        shape: PinCodeFieldShape.box,
+                        borderRadius: BorderRadius.circular(5),
+                        fieldHeight: 50,
+                        fieldWidth: 40,
+                        activeFillColor: Colors.white,
+                      ),
+                      animationDuration: Duration(milliseconds: 300),
+                      backgroundColor: Colors.transparent,
+                      controller: _otpTEController,
+                      appContext: context,
+                    ),
+                    const SizedBox(height: 16),
+                    // FilledButton(
+                    //   onPressed: _onTapVerifyButton,
+                    //   child: Text('Verify'),
+                    // ),
+                    Consumer<VerifyEmailOtpProvider>(
+                      builder: (context, verifyEmailOtpProvider, _) {
+                        return Visibility(
+                          visible: verifyEmailOtpProvider.recoverVerifyOtpInProgress == false,
+                          replacement: CenteredProgressIndicator(),
+                          child: FilledButton(onPressed: _onTapVerifyButton, child: Text('Verify')),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 36),
+                    Center(
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                          text: "Already have an account? ",
+                          children: [
+                            TextSpan(
+                              text: 'Login',
+                              style: TextStyle(color: Colors.green),
+                              recognizer: TapGestureRecognizer()..onTap = _onTapSignUpButton,
+                            ),
+                          ],
                         ),
-                        text: "Already have an account? ",
-                        children: [
-                          TextSpan(
-                            text: 'Login',
-                            style: TextStyle(color: Colors.green),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = _onTapSignUpButton,
-                          ),
-                        ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -101,31 +106,42 @@ class _ForgotPasswordVerifyOtpScreenState
   }
 
   void _onTapSignUpButton() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-      (predicate) => false,
-    );
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => LoginScreen()), (predicate) => false);
   }
 
-
-  Future<void> _recoverVerifyOtp() async {
+  Future<void> _recoverVerifyOtp2() async {
     _recoverVerifyOtpInProgress = true;
     setState(() {});
-    final ApiResponse response = await ApiCaller.getRequest(
-      url: Urls.recoverVerifyOtpUrl(widget.email,_otpTEController.text),
-    );
+    final ApiResponse response = await ApiCaller.getRequest(url: Urls.recoverVerifyOtpUrl(widget.email, _otpTEController.text));
     _recoverVerifyOtpInProgress = false;
     setState(() {});
     if (response.isSuccess) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => ResetPasswordScreen(email: widget.email, otp: _otpTEController.text,)),
-            (predicate) => false,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(email: widget.email, otp: _otpTEController.text),
+        ),
+        (predicate) => false,
       );
       await Future.delayed(Duration(seconds: 1));
     } else {
       showSnackBarMessage(context, response.errorMessage!);
+    }
+  }
+
+  Future<void> _recoverVerifyOtp() async {
+    final bool isSuccess = await _verifyEmailOtpProvider.recoverVerifyOtp(widget.email, _otpTEController.text);
+    if (isSuccess) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(email: widget.email, otp: _otpTEController.text),
+        ),
+        (predicate) => false,
+      );
+      await Future.delayed(Duration(seconds: 1));
+    } else {
+      showSnackBarMessage(context, _verifyEmailOtpProvider.errorMessage!);
     }
   }
 
