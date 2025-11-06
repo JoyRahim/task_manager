@@ -94,6 +94,7 @@ class NewTaskListProvider extends ChangeNotifier {
       isSuccess = true;
       _addNewTaskInProgress = false;
       notifyListeners();
+      await getAllTaskStatusCount();
       await getNewTasks();
     } else {
       _errorMessage = response.errorMessage;
