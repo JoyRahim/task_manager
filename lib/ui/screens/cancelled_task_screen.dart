@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:task_manager/ui/controllers/nav_bar_task_provider.dart';
 import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
 
-import '../../data/models/task_model.dart';
-import '../../data/services/api_caller.dart';
-import '../../data/utils/urls.dart';
-import '../widgets/snack_bar_message.dart';
 import '../widgets/task_card.dart';
 
 class CancelledTaskScreen extends StatefulWidget {
@@ -15,32 +13,13 @@ class CancelledTaskScreen extends StatefulWidget {
 }
 
 class _CancelledTaskScreenState extends State<CancelledTaskScreen> {
-  bool _getCancelledTaskInProgress = false;
-  List<TaskModel> _cancelledTaskList = [];
 
   @override
   void initState() {
     super.initState();
-    _getAllCancelledTasks();
-  }
-
-  Future<void> _getAllCancelledTasks() async {
-    _getCancelledTaskInProgress = true;
-    setState(() {});
-    final ApiResponse response = await ApiCaller.getRequest(
-      url: Urls.cancelledTaskListUrl,
-    );
-    if (response.isSuccess) {
-      List<TaskModel> list = [];
-      for (Map<String, dynamic> jsonData in response.responseData['data']) {
-        list.add(TaskModel.fromJson(jsonData));
-      }
-      _cancelledTaskList = list;
-    } else {
-      showSnackBarMessage(context, response.errorMessage!);
-    }
-    _getCancelledTaskInProgress = false;
-    setState(() {});
+    Future.microtask(() {
+      Provider.of<NavBarTaskProvider>(context, listen: false).getAllCancelledTasks();
+    });
   }
 
   @override
@@ -48,23 +27,27 @@ class _CancelledTaskScreenState extends State<CancelledTaskScreen> {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Visibility(
-          visible: _getCancelledTaskInProgress == false,
-          replacement: CenteredProgressIndicator(),
-          child: ListView.separated(
-            itemCount: _cancelledTaskList.length,
-            itemBuilder: (context, index) {
-              return TaskCard(
-                taskModel: _cancelledTaskList[index],
-                refreshParent: () {
-                  _getAllCancelledTasks();
+        child: Consumer<NavBarTaskProvider>(
+            builder: (context, navBarTaskProvider, _) {
+            return Visibility(
+              visible: navBarTaskProvider.getCancelledTaskInProgress == false,
+              replacement: CenteredProgressIndicator(),
+              child: ListView.separated(
+                itemCount: navBarTaskProvider.cancelledTaskList.length,
+                itemBuilder: (context, index) {
+                  return TaskCard(
+                    taskModel: navBarTaskProvider.cancelledTaskList[index],
+                    refreshParent: () {
+                      context.read<NavBarTaskProvider>().getAllCancelledTasks();
+                    },
+                  );
                 },
-              );
-            },
-            separatorBuilder: (context, index) {
-              return SizedBox(height: 8);
-            },
-          ),
+                separatorBuilder: (context, index) {
+                  return SizedBox(height: 8);
+                },
+              ),
+            );
+          }
         ),
       ),
     );

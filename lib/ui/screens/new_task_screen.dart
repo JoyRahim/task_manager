@@ -95,6 +95,7 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
                           return TaskCard(
                             taskModel: newTaskListProvider.newTaskList[index],
                             refreshParent: () {
+                              context.read<NewTaskListProvider>().getAllTaskStatusCount();
                               context.read<NewTaskListProvider>().getNewTasks();
                             },
                           );

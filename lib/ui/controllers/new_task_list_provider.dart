@@ -9,7 +9,11 @@ class NewTaskListProvider extends ChangeNotifier {
   bool _getNewTasksInProgress = false;
   bool _getTaskStatusCountInProgress = false;
   bool _addNewTaskInProgress = false;
+  bool _changeStatusInProgress = false;
+  bool _deleteInProgress = false;
 
+  String? _taskId;
+  String? _editTaskId;
   String? _errorMessage;
 
   List<TaskModel> _newTaskList = [];
@@ -18,6 +22,10 @@ class NewTaskListProvider extends ChangeNotifier {
   bool get getNewTasksProgress => _getNewTasksInProgress;
   bool get getTaskStatusCountInProgress => _getTaskStatusCountInProgress;
   bool get addNewTaskInProgress => _addNewTaskInProgress;
+  bool get changeStatusInProgress => _changeStatusInProgress;
+  bool get deleteInProgress => _deleteInProgress;
+  String? get taskId => _taskId;
+  String? get editTaskId => _editTaskId;
 
   String? get errorMessage => _errorMessage;
 
@@ -106,4 +114,47 @@ class NewTaskListProvider extends ChangeNotifier {
 
     return isSuccess;
   }
+
+  Future<bool> deleteTask(String taskId) async {
+    bool isSuccess = false;
+    _taskId = taskId;
+    _deleteInProgress = true;
+    notifyListeners();
+
+    final ApiResponse response = await ApiCaller.getRequest(
+      url: Urls.deleteTaskUrl(taskId),
+    );
+
+    if (response.isSuccess) {
+      isSuccess = true;
+    } else {
+      _errorMessage = response.errorMessage;
+    }
+    _deleteInProgress = false;
+    _taskId = null;
+    notifyListeners();
+    return isSuccess;
+  }
+
+  Future<bool> changeStatus(String taskId, String status) async {
+    bool isSuccess = false;
+    _changeStatusInProgress = true;
+    _editTaskId = taskId;
+    notifyListeners();
+
+    final ApiResponse response = await ApiCaller.getRequest(
+      url: Urls.updateTaskStatusUrl(taskId, status),
+    );
+
+    if (response.isSuccess) {
+      isSuccess = true;
+    } else {
+      _errorMessage = response.errorMessage;
+    }
+    _changeStatusInProgress = false;
+    _editTaskId = null;
+    notifyListeners();
+    return isSuccess;
+  }
+
 }
